@@ -1,0 +1,47 @@
+
+.bg-image{
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 40vh;
+}
+.painter-container {
+    background: 
+        linear-gradient(45deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 100%), 
+        url("../img/background_cow.jpg");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    color: white;
+}
+
+/* make gradient from top to bottom when md or smaller */
+@media screen and (max-width: 768px) {
+    .painter-container {
+        background: 
+            linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 100%), 
+            url("../img/background_cow.jpg");
+    }
+}
+
+.painter-container img {
+    max-height: 40vh;
+}
+
+.footer_text {
+    color: black;
+}
+  
+.download_book{
+    max-width: 20%;
+}
+
+.download_text {
+    color: black;
+}
+
+#darkModeButton {
+    font-size: 1.5rem;
+    cursor: pointer;
+    user-select: none;
+}

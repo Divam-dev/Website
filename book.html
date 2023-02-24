@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+    <script src="epub.js/dist/epub.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="css/examples.css">
+
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-md">
+        <div class="container-xxl">
+            <a href="index.html" class="navbar-brand">
+                <span class="text-primary">Writer book</span>
+                </span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav"
+                aria-controls="main-nav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end aligh-center" id="main-nav">
+                <ul class="navbar-nav mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a href="book.html" class="nav-link">Книга</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">Художник</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">Письменник</a>
+                    </li>
+                </ul>
+            </div>
+    </nav>
+
+
+    <h1 class="text-center p-5">Книга про Криволапа</h1>
+
+    <!--EpubReader-->
+
+  <!-- <div id="title"></div> -->
+  <select id="toc"></select>
+  <div id="viewer" class="spreads mt-5 mb-5"></div>
+  <a id="prev" href="#prev" class="arrow">‹</a>
+  <a id="next" href="#next" class="arrow">›</a>
+
+  <script>
+    var params = URLSearchParams && new URLSearchParams(document.location.search.substring(1));
+    var url = params && params.get("url") && decodeURIComponent(params.get("url"));
+    var currentSectionIndex = (params && params.get("loc")) ? params.get("loc") : undefined;
+
+    // Load the opf
+    var book = ePub("alice.epub");
+    var rendition = book.renderTo("viewer", {
+      width: "100%",
+      height: 600,
+      spread: "always"
+    });
+
+    rendition.display(currentSectionIndex);
+
+    book.ready.then(function() {
+
+      var next = document.getElementById("next");
+
+      next.addEventListener("click", function(e){
+        book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+        e.preventDefault();
+      }, false);
+
+      var prev = document.getElementById("prev");
+      prev.addEventListener("click", function(e){
+        book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+        e.preventDefault();
+      }, false);
+
+      var keyListener = function(e){
+
+        // Left Key
+        if ((e.keyCode || e.which) == 37) {
+          book.package.metadata.direction === "rtl" ? rendition.next() : rendition.prev();
+        }
+
+        // Right Key
+        if ((e.keyCode || e.which) == 39) {
+          book.package.metadata.direction === "rtl" ? rendition.prev() : rendition.next();
+        }
+
+      };
+
+      rendition.on("keyup", keyListener);
+      document.addEventListener("keyup", keyListener, false);
+
+    })
+
+    var title = document.getElementById("title");
+
+    rendition.on("rendered", function(section){
+      var current = book.navigation && book.navigation.get(section.href);
+
+      if (current) {
+        var $select = document.getElementById("toc");
+        var $selected = $select.querySelector("option[selected]");
+        if ($selected) {
+          $selected.removeAttribute("selected");
+        }
+
+        var $options = $select.querySelectorAll("option");
+        for (var i = 0; i < $options.length; ++i) {
+          let selected = $options[i].getAttribute("ref") === current.href;
+          if (selected) {
+            $options[i].setAttribute("selected", "");
+          }
+        }
+      }
+
+    });
+
+    rendition.on("relocated", function(location){
+      console.log(location);
+
+      var next = book.package.metadata.direction === "rtl" ?  document.getElementById("prev") : document.getElementById("next");
+      var prev = book.package.metadata.direction === "rtl" ?  document.getElementById("next") : document.getElementById("prev");
+
+      if (location.atEnd) {
+        next.style.visibility = "hidden";
+      } else {
+        next.style.visibility = "visible";
+      }
+
+      if (location.atStart) {
+        prev.style.visibility = "hidden";
+      } else {
+        prev.style.visibility = "visible";
+      }
+
+    });
+
+    rendition.on("layout", function(layout) {
+      let viewer = document.getElementById("viewer");
+
+      if (layout.spread) {
+        viewer.classList.remove('single');
+      } else {
+        viewer.classList.add('single');
+      }
+    });
+
+    window.addEventListener("unload", function () {
+      console.log("unloading");
+      this.book.destroy();
+    });
+
+    book.loaded.navigation.then(function(toc){
+			var $select = document.getElementById("toc"),
+					docfrag = document.createDocumentFragment();
+
+			toc.forEach(function(chapter) {
+				var option = document.createElement("option");
+				option.textContent = chapter.label;
+				option.setAttribute("ref", chapter.href);
+
+				docfrag.appendChild(option);
+			});
+
+			$select.appendChild(docfrag);
+
+			$select.onchange = function(){
+					var index = $select.selectedIndex,
+							url = $select.options[index].getAttribute("ref");
+					rendition.display(url);
+					return false;
+			};
+
+		});
+
+  </script>
+
+
+
+
+    <footer class="text-center text-lg-start text-muted footer">
+        <div class="p-4 d-flex justify-content-between" style="background-color: rgb(217, 217, 217);">
+
+            <span class="footer_text">Copyright © 2023</span>
+            <div>
+                <a class="footer_text text-reset text-decoration-none me-3" href="#">Копірайт</a>
+                <a class="footer_text text-reset text-decoration-none me-3" href="#">Контакти</a>
+                <a href="https://www.facebook.com/"><i class="bi bi-facebook"></i></a>
+            </div>
+        </div>
+    </footer>
+
+
+
+
+</body>
+
+</html>
